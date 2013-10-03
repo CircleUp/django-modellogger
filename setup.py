@@ -10,7 +10,7 @@ def read(fname):
 
 setup(
     name = "django-modellogger",
-    version = "0.0.1",
+    version = "0.0.2",
     author = "Dan Newcome",
     author_email = "dnewcome@circleup.com",
     description = ("Change tracking for Django models."),
@@ -18,7 +18,7 @@ setup(
     keywords = "django",
     url = "http://packages.python.org/django-modellogger",
     packages=['modellogger'],
-    long_description = read('README.md'),
+    long_description = read('README'),
     classifiers = [
         "Development Status :: 3 - Alpha",
         "Topic :: Database",
