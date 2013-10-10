@@ -10,11 +10,10 @@ def read(fname):
 
 setup(
     name = "django-modellogger",
-    version = "0.0.2",
-    author = "Dan Newcome",
-    author_email = "dnewcome@circleup.com",
+    version = "0.0.3",
+    author = "CircleUp",
+    author_email = "webaccounts@circleup.com",
     description = ("Change tracking for Django models."),
-    license = "BSD",
     keywords = "django",
     url = "http://packages.python.org/django-modellogger",
     packages=['modellogger'],
@@ -22,6 +21,5 @@ setup(
     classifiers = [
         "Development Status :: 3 - Alpha",
         "Topic :: Database",
-        "License :: OSI Approved :: BSD License",
     ],
 )
