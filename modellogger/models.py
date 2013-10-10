@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 from django.db.models.signals import post_save, post_delete
@@ -31,7 +32,7 @@ def save_model_changes(sender, instance, **kwargs):
 class ChangeLog(models.Model):
     """Used to record field-level changes to models"""
     timestamp = models.DateTimeField(auto_now=True)
-    user_id = models.PositiveIntegerField(null=True, default=None)
+    user = models.ForeignKey(User, null=True, default=None)
     content_type = models.ForeignKey(ContentType)
     object_id = models.PositiveIntegerField()
     content_object = generic.GenericForeignKey()
