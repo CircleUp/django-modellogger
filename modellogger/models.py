@@ -32,8 +32,8 @@ def save_model_changes(sender, instance, **kwargs):
 class ChangeLog(models.Model):
     """Used to record field-level changes to models"""
     timestamp = models.DateTimeField(auto_now=True)
-    user = models.ForeignKey(User, null=True, default=None)
-    content_type = models.ForeignKey(ContentType)
+    user = models.ForeignKey(User, null=True, default=None, on_delete=models.PROTECT)
+    content_type = models.ForeignKey(ContentType, on_delete=models.PROTECT)
     object_id = models.PositiveIntegerField()
     content_object = generic.GenericForeignKey()
     column_name = models.CharField(max_length=150)
