@@ -2,6 +2,7 @@ from threading import currentThread
 
 _requests = {}
 
+
 class GlobalRequestMiddleware(object):
     """
     Allows access to the request variable from anywhere in the code.
