@@ -1,16 +1,17 @@
-import unittest
 from django.test import TestCase
 from django.db import models
 from models import TrackableModel, ChangeLog
+
 
 class TrackedModel(TrackableModel):
     TRACK_CHANGES = True
     ordinal = models.PositiveIntegerField(null=True, default=None)
 
+
 class UserProfile(TrackableModel):
     TRACK_CHANGES = True
     first_name = models.CharField(max_length=40, default='')
-    username  = models.CharField(max_length=40, default='')
+    username = models.CharField(max_length=40, default='')
     identity_verification_user = models.ForeignKey('UserProfile', null=True, related_name="+")
   
 
@@ -28,7 +29,6 @@ class TestModellogger(TestCase):
         print len(ChangeLog.objects.all())
 
         self.assertEqual(1, 1)
-
 
     def test_changes_log(self):
         """Test that changes made to models are saved into the model change log"""

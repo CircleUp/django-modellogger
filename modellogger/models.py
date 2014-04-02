@@ -9,7 +9,6 @@ from middleware import get_request
 def reset_model_state(sender, instance, **kwargs):
     """Reset a dirty model to clean"""
     instance.reset_state()
-    pass
 
 
 def save_model_changes(sender, instance, **kwargs):
@@ -46,6 +45,7 @@ class ChangeLog(models.Model):
 
     def __str__(self):
         return str(self.timestamp) + ' ' + self.column_name + ' changed to ' + self.new_value
+
 
 class TrackableModel(models.Model):
     EXCLUDED_TRACKING_FIELDS = ['created_on', 'updated_on', 'id']
