@@ -5,7 +5,9 @@ when you run "manage.py test".
 Replace this with more appropriate tests for your application.
 """
 from django import forms
+from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase
+from modellogger.fix_records import find_discontinuities
 from modellogger.models import ChangeLog
 from testapp.models import UserProfile, TrackedModel, Person
 
@@ -16,43 +18,72 @@ class TestModelLogger(TestCase):
         p = Person()
         p.first_name = 'Bob'
         p.save()
-        self.assertEqual(ChangeLog.objects.count(), 1)
+        self.assertEqual(ChangeLog.objects.count(), 3)
 
         p.first_name = 'Sally'
         p.save()
-        self.assertEqual(ChangeLog.objects.count(), 2)
+        self.assertEqual(ChangeLog.objects.count(), 4)
 
         p.first_name = 'Bob'
         p.save()
-        self.assertEqual(ChangeLog.objects.count(), 3)
+        self.assertEqual(ChangeLog.objects.count(), 5)
 
     def test_track_changes_with_initial_id(self):
         p = Person(first_name='Bob', last_name='Smith', id=1)
         p.save()
-        self.assertEqual(ChangeLog.objects.count(), 2)
+        self.assertEqual(ChangeLog.objects.count(), 3)
 
         p.first_name = 'Sally'
         p.save()
-        self.assertEqual(ChangeLog.objects.count(), 3)
+        self.assertEqual(ChangeLog.objects.count(), 4)
 
     def test_track_changes_without_initial_id(self):
         p = Person(first_name='Bob', last_name='Smith')
         p.save()
-        self.assertEqual(ChangeLog.objects.count(), 2)
+        self.assertEqual(ChangeLog.objects.count(), 3)
 
         p.first_name = 'Sally'
         p.save()
-        self.assertEqual(ChangeLog.objects.count(), 3)
+        self.assertEqual(ChangeLog.objects.count(), 4)
+
+    def test_change_log_returns_actual_python_objects(self):
+        p = Person(donuts_consumed=5)
+        p.save()
+
+        log = ChangeLog.objects.filter(column_name='donuts_consumed')[0]
+        self.assertNotEqual('5', log.new_value_as_python)
+        self.assertEqual(5, log.new_value_as_python)
+
+    def test_handling_records_for_deleted_models(self):
+        log = ChangeLog(content_type_id=999, object_id=15, column_name='soda_consumed', old_value='1', new_value='2')
+        with self.assertRaisesMessage(ContentType.DoesNotExist, 'does not exist'):
+            log.new_value_as_python
+
+    def test_handling_records_for_deleted_columns(self):
+        log = ChangeLog(content_type_id=1, object_id=15, column_name='soda_consumed', old_value='1', new_value='2')
+        with self.assertRaisesMessage(ContentType.DoesNotExist, 'column no longer exists'):
+            log.new_value_as_python
+
+    def test_track_changes_for_floats_saved_to_integer_fields(self):
+        """
+        Some data discrepancy is caused by saving a float into an integer field. The model ends up
+        with a whole number but the change record records the float.
+        """
+
+        p = Person(donuts_consumed=1.2)
+        p.save()
+        logs = ChangeLog.objects.filter(column_name='donuts_consumed')
+        self.assertEqual(logs[0].new_value_as_python, 1)
 
     def test_track_changes_after_db_pull(self):
         p = Person(first_name='Bob', last_name='Smith', id=1)
         p.save()
-        self.assertEqual(ChangeLog.objects.count(), 2)
+        self.assertEqual(ChangeLog.objects.count(), 3)
 
         p1 = Person.objects.get(pk=1)
         p1.first_name = 'Sally'
         p1.save()
-        self.assertEqual(ChangeLog.objects.count(), 3)
+        self.assertEqual(ChangeLog.objects.count(), 4)
 
     def test_form_save(self):
 
@@ -64,7 +95,7 @@ class TestModelLogger(TestCase):
         person = Person(first_name='John', last_name='Smith', id=2)
         person.save()
 
-        self.assertEqual(ChangeLog.objects.count(), 2)
+        self.assertEqual(ChangeLog.objects.count(), 3)
 
         post_data = {
             'first_name': 'Sally',
@@ -74,7 +105,7 @@ class TestModelLogger(TestCase):
         form = PersonForm(post_data, instance=person)
         form.save()
 
-        self.assertEqual(ChangeLog.objects.count(), 4)
+        self.assertEqual(ChangeLog.objects.count(), 5)
 
     def test_nominal(self):
         tm = TrackedModel()
@@ -90,16 +121,16 @@ class TestModelLogger(TestCase):
         """Test that changes made to models are saved into the model change log"""
         person = UserProfile(first_name="Bob", username='')
         person.save()
-        logs = ChangeLog.objects.all()
+        logs = ChangeLog.objects.filter(column_name="first_name")
         self.assertEqual(1, len(logs))
         self.assertIsNone(logs[0].user_id)
         self.assertEqual(logs[0].column_name, 'first_name')
-        self.assertEqual(logs[0].old_value, u'')
+        self.assertEqual(logs[0].old_value, None)
         self.assertEqual(logs[0].new_value, 'Bob')
 
         person.first_name = "Luke"
         person.save()
-        logs = ChangeLog.objects.all()
+        logs = ChangeLog.objects.filter(column_name='first_name')
         self.assertEqual(2, len(logs))
         self.assertIsNone(logs[1].user_id)
         self.assertEqual(logs[1].column_name, 'first_name')
@@ -112,8 +143,6 @@ class TestModelLogger(TestCase):
         person.identity_verification_user = administrator
         person.save()
 
-        logs = ChangeLog.objects.all()
-        self.assertEqual(6, len(logs))
 
     def test_model_is_dirty_with_simple_field(self):
         """Test that a simple model detects changes properly"""
@@ -168,3 +197,13 @@ class TestModelLogger(TestCase):
         person.save()
 
         self.assertFalse(person.is_dirty)
+
+    def test_records_default_values_as_changes(self):
+        person = Person()
+        self.assertEqual(3, len(person.changes_pending))
+
+        person = Person(preferred_ice_cream_flavor='Strawberry')
+        self.assertEqual(3, len(person.changes_pending))
+
+    def test_find_errors(self):
+        find_discontinuities()
