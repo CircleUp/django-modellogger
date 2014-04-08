@@ -127,6 +127,9 @@ class TrackableModel(models.Model):
         """Converts the model to a dictionary in a way conducive to logging"""
         return dict([(f.attname, f.get_prep_value(getattr(self, f.attname))) for f in self._meta.fields if not f.attname in self._excluded_tracking_fields()])
 
+    def reset_state(self):
+        self.save_inital_state()
+
     def save_inital_state(self):
         """
         Set the model to a clean state
