@@ -8,17 +8,18 @@ from setuptools import setup
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
+
 setup(
-    name = "django-modellogger",
-    version = "0.0.4",
-    author = "CircleUp",
-    author_email = "webaccounts@circleup.com",
-    description = ("Change tracking for Django models."),
-    keywords = "django",
-    url = "http://packages.python.org/django-modellogger",
+    name="django-modellogger",
+    version="0.0.5",
+    author="CircleUp",
+    author_email="webaccounts@circleup.com",
+    description=("Change tracking for Django models."),
+    keywords="django",
+    url="http://packages.python.org/django-modellogger",
     packages=['modellogger'],
-    long_description = read('README'),
-    classifiers = [
+    long_description=read('README'),
+    classifiers=[
         "Development Status :: 3 - Alpha",
         "Topic :: Database",
     ],
