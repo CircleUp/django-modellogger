@@ -1,5 +1,3 @@
-# Django settings for modellogger_django_test_project project.
-
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
@@ -102,10 +100,10 @@ MIDDLEWARE_CLASSES = (
     # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
 
-ROOT_URLCONF = 'modellogger_django_test_project.urls'
+ROOT_URLCONF = 'testmodellogger.urls'
 
 # Python dotted path to the WSGI application used by Django's runserver.
-WSGI_APPLICATION = 'modellogger_django_test_project.wsgi.application'
+WSGI_APPLICATION = 'testmodellogger.wsgi.application'
 
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".

@@ -7,7 +7,6 @@ Replace this with more appropriate tests for your application.
 from django import forms
 from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase
-from modellogger.fix_records import find_discontinuities
 from modellogger.models import ChangeLog
 from testapp.models import UserProfile, TrackedModel, Person
 
@@ -205,5 +204,15 @@ class TestModelLogger(TestCase):
         person = Person(preferred_ice_cream_flavor='Strawberry')
         self.assertEqual(3, len(person.changes_pending))
 
-    def test_find_errors(self):
-        find_discontinuities()
+
+    def test_is_dirty_from_db_get(self):
+        Person(first_name="Bob").save()
+
+        p = Person.objects.get(first_name="Bob")
+        self.assertFalse(p.is_dirty)
+
+    def test_is_dirty_from_db_filter(self):
+        Person(first_name="Bob").save()
+
+        p = Person.objects.filter(first_name="Bob")[0]
+        self.assertFalse(p.is_dirty)

@@ -23,6 +23,8 @@ def mark_from_db(sender, instance, **kwargs):
     """Lets modellogger know if this object came from the database"""
     if instance._state.db:
         instance._from_db = True
+    else:
+        instance._from_db = False
 
 
 def save_initial_model_state(sender, instance, **kwargs):
@@ -32,7 +34,7 @@ def save_initial_model_state(sender, instance, **kwargs):
 
 def save_model_changes(sender, instance, **kwargs):
     """Save a log of dirty model changes and reset the model to clean"""
-    changes = instance.changes_pending
+    changes = instance._changes_pending_no_check_db
     changelog_objects = []
     request = get_request()
     for column_name, (old_value, new_value) in changes.items():
@@ -103,9 +105,9 @@ class TrackableModel(models.Model):
         except AttributeError:
             pass
 
-        post_save.connect(post_save_method, sender=self.__class__, dispatch_uid='DirtyRecord-%s' % self.__class__.__name__)
-
         pre_save.connect(mark_from_db, sender=self.__class__, dispatch_uid='MarkFromDb-%s' % self.__class__.__name__)
+
+        post_save.connect(post_save_method, sender=self.__class__, dispatch_uid='DirtyRecord-%s' % self.__class__.__name__)
 
         # set the initial state
         self.save_inital_state()
@@ -127,6 +129,11 @@ class TrackableModel(models.Model):
         """Converts the model to a dictionary in a way conducive to logging"""
         return dict([(f.attname, f.get_prep_value(getattr(self, f.attname))) for f in self._meta.fields if not f.attname in self._excluded_tracking_fields()])
 
+    def _mark_if_from_db(self):
+        self._from_db = False
+        if self._state.db:
+            self._from_db = True
+
     def reset_state(self):
         self.save_inital_state()
 
@@ -137,12 +144,16 @@ class TrackableModel(models.Model):
         This is called after the model is saved
         """
         self._original_state = self._as_dict()
-        self._from_db = False
-        if self._state.db:
-            self._from_db = True
+        self._mark_if_from_db()
 
     @property
     def original_state(self):
+        self._mark_if_from_db()
+        return self._original_state_no_check_db
+
+    @property
+    def _original_state_no_check_db(self):
+        """When called from the post_save signal we want the original state"""
         if self._from_db:
             return self._original_state
         return self._empty_dict()
@@ -163,6 +174,12 @@ class TrackableModel(models.Model):
         """Which fields are dirty and what changes are being made to them?"""
         new_state = self._as_dict()
         return dict([(key, (value, new_state[key])) for key, value in self.original_state.iteritems() if value != new_state[key]])
+
+    @property
+    def _changes_pending_no_check_db(self):
+        """Which fields are dirty and what changes are being made to them?"""
+        new_state = self._as_dict()
+        return dict([(key, (value, new_state[key])) for key, value in self._original_state_no_check_db.iteritems() if value != new_state[key]])
 
     class Meta(object):
         """Object metaclass"""
