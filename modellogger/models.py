@@ -4,6 +4,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 from django.db.models.fields import FieldDoesNotExist
 from django.db.models.signals import post_save, pre_save
+from django.dispatch import Signal
 from middleware import get_request
 
 CONTENT_TYPES_DICT = None
@@ -47,6 +48,11 @@ def save_model_changes(sender, instance, **kwargs):
 
     ChangeLog.objects.bulk_create(changelog_objects)
     instance.save_inital_state()
+    if changes:
+        model_changes_saved.send(sender=sender, instance=instance, changes=changes)
+
+
+model_changes_saved =  Signal(providing_args=["instance", "changes"])
 
 
 class ChangeLog(models.Model):
