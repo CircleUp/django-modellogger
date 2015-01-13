@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 from django.db.models.fields import FieldDoesNotExist
@@ -58,7 +58,7 @@ model_changes_saved =  Signal(providing_args=["instance", "changes"])
 class ChangeLog(models.Model):
     """Used to record field-level changes to models"""
     timestamp = models.DateTimeField(auto_now=True)
-    user = models.ForeignKey(User, null=True, default=None, on_delete=models.PROTECT)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, default=None, on_delete=models.PROTECT)
     content_type = models.ForeignKey(ContentType, on_delete=models.PROTECT)
     object_id = models.PositiveIntegerField()
     content_object = generic.GenericForeignKey()
