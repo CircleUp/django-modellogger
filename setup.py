@@ -11,7 +11,7 @@ def read(fname):
 
 setup(
     name="django-modellogger",
-    version="0.0.7",
+    version="0.0.7b",
     author="CircleUp",
     author_email="webaccounts@circleup.com",
     description=("Change tracking for Django models."),
