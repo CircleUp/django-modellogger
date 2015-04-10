@@ -103,6 +103,13 @@ class TrackableModel(models.Model):
     def __init__(self, *args, **kwargs):
         super(TrackableModel, self).__init__(*args, **kwargs)
 
+        cls = self.__class__
+        # cache results at the class level - there is certainly a more correct way to do this
+        if '_excluded_tracking_fields' not in self.__class__.__dict__:
+            # Which fields do we not track
+            cls._excluded_tracking_fields = getattr(cls, 'EXCLUDED_TRACKING_FIELDS', []) + TrackableModel.EXCLUDED_TRACKING_FIELDS
+            cls._fields_minus_exclusions = [f for f in self._meta.fields if f.attname not in cls._excluded_tracking_fields]
+
         # what action is taken after each save?
         post_save_method = save_initial_model_state
         try:
@@ -119,21 +126,17 @@ class TrackableModel(models.Model):
         self.save_inital_state()
 
     # we need these methods from Record
-    def _excluded_tracking_fields(self):
-        """Which fields do we not track"""
-        return getattr(self.__class__, 'EXCLUDED_TRACKING_FIELDS', []) + TrackableModel.EXCLUDED_TRACKING_FIELDS
-
     def _empty_dict(self):
         """An empty dict version of the model"""
-        return dict([(f.attname, None) for f in self._meta.fields if not f.attname in self._excluded_tracking_fields()])
+        return dict([(f.attname, None) for f in self._fields_minus_exclusions])
 
     def _default_dict(self):
         """An empty dict version of the model - populated with defaults"""
-        return dict([(f.attname, f.get_default()) for f in self._meta.fields if not f.attname in self._excluded_tracking_fields()])
+        return dict([(f.attname, f.get_default()) for f in self._fields_minus_exclusions])
 
     def _as_dict(self):
         """Converts the model to a dictionary in a way conducive to logging"""
-        return dict([(f.attname, f.get_prep_value(getattr(self, f.attname))) for f in self._meta.fields if not f.attname in self._excluded_tracking_fields()])
+        return {f.attname: f.get_prep_value(getattr(self, f.attname)) for f in self._fields_minus_exclusions}
 
     def _mark_if_from_db(self):
         self._from_db = False

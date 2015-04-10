@@ -8,10 +8,11 @@ from setuptools import setup
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
+from modellogger import __version__
 
 setup(
     name="django-modellogger",
-    version="0.0.8",
+    version=__version__,
     author="CircleUp",
     author_email="webaccounts@circleup.com",
     description=("Change tracking for Django models."),
