@@ -52,7 +52,7 @@ def save_model_changes(sender, instance, **kwargs):
         model_changes_saved.send(sender=sender, instance=instance, changes=changes)
 
 
-model_changes_saved =  Signal(providing_args=["instance", "changes"])
+model_changes_saved = Signal(providing_args=["instance", "changes"])
 
 
 class ChangeLog(models.Model):
@@ -69,6 +69,9 @@ class ChangeLog(models.Model):
     class Meta(object):
         """Object metaclass"""
         db_table = u'log_model_change'
+        index_together = [
+            ["content_type", "object_id"]
+        ]
 
     @property
     def new_value_as_python(self):
