@@ -18,7 +18,7 @@ setup(
     description=("Change tracking for Django models."),
     keywords="django",
     url="http://packages.python.org/django-modellogger",
-    packages=['modellogger', 'modellogger.migrations],
+    packages=['modellogger', 'modellogger.migrations'],
     long_description=read('README'),
     classifiers=[
         "Development Status :: 3 - Alpha",
