@@ -6,12 +6,35 @@ Replace this with more appropriate tests for your application.
 """
 from django import forms
 from django.contrib.contenttypes.models import ContentType
+from django.db import models
 from django.test import TestCase
-from modellogger.models import ChangeLog
+
+from modellogger.models import ChangeLog, TrackableModel
 from testapp.models import UserProfile, TrackedModel, Person
 
 
 class TestModelLogger(TestCase):
+
+    def test_class_setup_with_subclasses(self):
+        """Test class configuration for subclasses"""
+        class Vehicle(TrackableModel):
+            TRACK_CHANGES = True
+            weight = models.PositiveIntegerField(null=True, default=None)
+
+        class Car(Vehicle):
+            TRACK_CHANGES = True
+            EXCLUDED_TRACKING_FIELDS = ['weight']
+            engine_type = models.CharField(max_length=40, default='')
+
+        with self.assertRaises(AttributeError):
+            Car._trackable_model_initialized
+
+        Vehicle()
+        self.assertEqual('Vehicle', Car._trackable_model_initialized)
+
+        Car()
+        self.assertEqual('Car', Car._trackable_model_initialized)
+        self.assertEqual('Vehicle', Vehicle._trackable_model_initialized)
 
     def test_track_changes_simple(self):
         p = Person()
@@ -85,7 +108,6 @@ class TestModelLogger(TestCase):
         self.assertEqual(ChangeLog.objects.count(), 4)
 
     def test_form_save(self):
-
         class PersonForm(forms.ModelForm):
             class Meta(object):
                 model = Person
@@ -141,7 +163,6 @@ class TestModelLogger(TestCase):
         person.first_name = 'Leia'
         person.identity_verification_user = administrator
         person.save()
-
 
     def test_model_is_dirty_with_simple_field(self):
         """Test that a simple model detects changes properly"""
@@ -203,7 +224,6 @@ class TestModelLogger(TestCase):
 
         person = Person(preferred_ice_cream_flavor='Strawberry')
         self.assertEqual(3, len(person.changes_pending))
-
 
     def test_is_dirty_from_db_get(self):
         Person(first_name="Bob").save()
