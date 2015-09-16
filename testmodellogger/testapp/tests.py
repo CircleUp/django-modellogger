@@ -150,7 +150,7 @@ class TestModelLogger(TestCase):
         self.assertTrue(person.is_dirty)
 
         # saving inital state doesn't matter since this model has never been saved to the database
-        person.save_inital_state()
+        person.save_initial_state()
         self.assertTrue(person.is_dirty)
 
         person.save()
@@ -170,7 +170,7 @@ class TestModelLogger(TestCase):
         self.assertTrue(person.is_dirty)
 
         # saving inital state doesn't matter since this model has never been saved to the database
-        person.save_inital_state()
+        person.save_initial_state()
         self.assertTrue(person.is_dirty)
         person.save()
 
