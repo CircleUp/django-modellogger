@@ -1,7 +1,7 @@
 from django.db import models
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.contenttypes import generic
+from django.contrib.contenttypes import fields
 from django.db.models.fields import FieldDoesNotExist
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import Signal
@@ -64,7 +64,7 @@ class ChangeLog(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, default=None, on_delete=models.PROTECT)
     content_type = models.ForeignKey(ContentType, on_delete=models.PROTECT)
     object_id = models.PositiveIntegerField()
-    content_object = generic.GenericForeignKey()
+    content_object = fields.GenericForeignKey()
     column_name = models.CharField(max_length=150)
     old_value = models.TextField(null=True, blank=True)
     new_value = models.TextField(null=True, blank=True)
