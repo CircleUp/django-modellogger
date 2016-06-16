@@ -24,11 +24,8 @@ def content_type_dict():
 
 
 def mark_from_db(sender, instance, **kwargs):
-    """Lets modellogger know if this object came from the database"""
-    if instance._state.db:
-        instance._from_db = True
-    else:
-        instance._from_db = False
+    """Lets modellogger know that this object came from the database"""
+    instance._from_db = True
 
 
 def save_initial_model_state(sender, instance, **kwargs):
@@ -109,6 +106,7 @@ class TrackableModel(models.Model):
     def __init__(self, *args, **kwargs):
         super(TrackableModel, self).__init__(*args, **kwargs)
         self.__class__.class_setup()
+        self._from_db = False
         self.save_initial_state()
 
     @classmethod
@@ -140,8 +138,8 @@ class TrackableModel(models.Model):
             except AttributeError:
                 pass
 
-            pre_save.connect(mark_from_db, sender=cls, dispatch_uid='MarkFromDb-%s' % cls.__name__)
             post_save.connect(post_save_method, sender=cls, dispatch_uid='DirtyRecord-%s' % cls.__name__)
+            post_save.connect(mark_from_db, sender=cls, dispatch_uid='MarkFromDb-%s' % cls.__name__)
 
     # we need these methods from Record
     def _empty_dict(self):
@@ -166,11 +164,6 @@ class TrackableModel(models.Model):
         """Converts the model to a dictionary in a way conducive to logging"""
         return {f.attname: f.get_prep_value(getattr(self, f.attname)) for f in self._fields_minus_exclusions}
 
-    def _mark_if_from_db(self):
-        self._from_db = False
-        if self._state.db:
-            self._from_db = True
-
     def reset_state(self):
         self.save_initial_state()
 
@@ -180,12 +173,10 @@ class TrackableModel(models.Model):
 
         This is called after the model is saved
         """
-        self._mark_if_from_db()
         self._original_state = self._as_dict_no_prep()
 
     @property
     def original_state(self):
-        self._mark_if_from_db()
         return self._original_state_no_check_db
 
     @property
