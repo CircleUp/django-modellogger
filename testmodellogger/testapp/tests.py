@@ -217,14 +217,9 @@ class TestModelLogger(TestCase):
         self.assertEqual(3, len(person.changes_pending))
 
     def test_is_dirty_from_db_get(self):
-        p = Person(first_name="Bob")
-        self.assertFalse(p._from_db)
-        p.save()
-        self.assertTrue(p._from_db)
+        Person(first_name="Bob").save()
 
-        p1 = Person.objects.get(first_name="Bob")
-        self.assertFalse(p1._state.adding)
-        self.assertTrue(p1._from_db)
+        p = Person.objects.get(first_name="Bob")
         self.assertFalse(p.is_dirty)
 
     def test_is_dirty_from_db_filter(self):
