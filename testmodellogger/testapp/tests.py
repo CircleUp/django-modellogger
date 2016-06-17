@@ -50,6 +50,15 @@ class TestModelLogger(TestCase):
         p.save()
         self.assertEqual(ChangeLog.objects.count(), 5)
 
+    def test_track_changes_with_initial_id(self):
+        p = Person(first_name='Bob', last_name='Smith', id=1)
+        p.save()
+        self.assertEqual(ChangeLog.objects.count(), 0)
+
+        p.first_name = 'Sally'
+        p.save()
+        self.assertEqual(ChangeLog.objects.count(), 1)
+
     def test_track_changes_without_initial_id(self):
         p = Person(first_name='Bob', last_name='Smith')
         p.save()
