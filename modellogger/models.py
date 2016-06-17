@@ -106,7 +106,7 @@ class TrackableModel(models.Model):
     def __init__(self, *args, **kwargs):
         super(TrackableModel, self).__init__(*args, **kwargs)
         self.__class__.class_setup()
-        self._from_db = False
+        self._from_db = self.pk is not None
         self.save_initial_state()
 
     @classmethod
@@ -164,33 +164,26 @@ class TrackableModel(models.Model):
         """Converts the model to a dictionary in a way conducive to logging"""
         return {f.attname: f.get_prep_value(getattr(self, f.attname)) for f in self._fields_minus_exclusions}
 
-    def reset_state(self):
-        self.save_initial_state()
-
     def save_initial_state(self):
         """
         Set the model to a clean state
 
-        This is called after the model is saved
+        This is called after the model is initialized or saved
         """
         self._original_state = self._as_dict_no_prep()
 
     @property
-    def original_state(self):
-        return self._original_state_no_check_db
-
-    @property
     def _original_state_no_check_db(self):
         """When called from the post_save signal we want the original state"""
-        if self._from_db:
-            return {f.attname: f.get_prep_value(self._original_state[f.attname]) for f in self._fields_minus_exclusions}
-        return self._empty_dict()
+        if not self._from_db:
+            return self._empty_dict()
+        return {f.attname: f.get_prep_value(self._original_state[f.attname]) for f in self._fields_minus_exclusions}
 
     @property
     def dirty_fields(self):
         """Which fields are dirty?"""
         new_state = self._as_dict()
-        return [key for key, value in self.original_state.iteritems() if value != new_state[key]]
+        return [key for key, value in self._original_state_no_check_db.iteritems() if value != new_state[key]]
 
     @property
     def is_dirty(self):
@@ -200,8 +193,7 @@ class TrackableModel(models.Model):
     @property
     def changes_pending(self):
         """Which fields are dirty and what changes are being made to them?"""
-        new_state = self._as_dict()
-        return dict([(key, (value, new_state[key])) for key, value in self.original_state.iteritems() if value != new_state[key]])
+        return self._changes_pending_no_check_db
 
     @property
     def _changes_pending_no_check_db(self):
