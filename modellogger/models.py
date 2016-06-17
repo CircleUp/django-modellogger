@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 from django.db import models
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
@@ -6,7 +8,7 @@ from django.db.models.fields import FieldDoesNotExist
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import Signal
 
-from middleware import get_request
+from .middleware import get_request
 
 CONTENT_TYPES_DICT = None
 
@@ -183,7 +185,7 @@ class TrackableModel(models.Model):
     def dirty_fields(self):
         """Which fields are dirty?"""
         new_state = self._as_dict()
-        return [key for key, value in self._original_state_no_check_db.iteritems() if value != new_state[key]]
+        return [key for key, value in self._original_state_no_check_db.items() if value != new_state[key]]
 
     @property
     def is_dirty(self):
@@ -199,7 +201,7 @@ class TrackableModel(models.Model):
     def _changes_pending_no_check_db(self):
         """Which fields are dirty and what changes are being made to them?"""
         new_state = self._as_dict()
-        return dict([(key, (value, new_state[key])) for key, value in self._original_state_no_check_db.iteritems() if value != new_state[key]])
+        return dict([(key, (value, new_state[key])) for key, value in self._original_state_no_check_db.items() if value != new_state[key]])
 
     class Meta(object):
         """Object metaclass"""
