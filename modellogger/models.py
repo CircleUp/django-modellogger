@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 from django.db import models
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
@@ -6,7 +8,7 @@ from django.db.models.fields import FieldDoesNotExist
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import Signal
 
-from middleware import get_request
+from .middleware import get_request
 
 CONTENT_TYPES_DICT = None
 
@@ -24,11 +26,8 @@ def content_type_dict():
 
 
 def mark_from_db(sender, instance, **kwargs):
-    """Lets modellogger know if this object came from the database"""
-    if instance._state.db:
-        instance._from_db = True
-    else:
-        instance._from_db = False
+    """Lets modellogger know that this object came from the database"""
+    instance._from_db = True
 
 
 def save_initial_model_state(sender, instance, **kwargs):
@@ -109,6 +108,7 @@ class TrackableModel(models.Model):
     def __init__(self, *args, **kwargs):
         super(TrackableModel, self).__init__(*args, **kwargs)
         self.__class__.class_setup()
+        self._from_db = self.pk is not None
         self.save_initial_state()
 
     @classmethod
@@ -140,8 +140,8 @@ class TrackableModel(models.Model):
             except AttributeError:
                 pass
 
-            pre_save.connect(mark_from_db, sender=cls, dispatch_uid='MarkFromDb-%s' % cls.__name__)
             post_save.connect(post_save_method, sender=cls, dispatch_uid='DirtyRecord-%s' % cls.__name__)
+            post_save.connect(mark_from_db, sender=cls, dispatch_uid='MarkFromDb-%s' % cls.__name__)
 
     # we need these methods from Record
     def _empty_dict(self):
@@ -166,40 +166,26 @@ class TrackableModel(models.Model):
         """Converts the model to a dictionary in a way conducive to logging"""
         return {f.attname: f.get_prep_value(getattr(self, f.attname)) for f in self._fields_minus_exclusions}
 
-    def _mark_if_from_db(self):
-        self._from_db = False
-        if self._state.db:
-            self._from_db = True
-
-    def reset_state(self):
-        self.save_initial_state()
-
     def save_initial_state(self):
         """
         Set the model to a clean state
 
-        This is called after the model is saved
+        This is called after the model is initialized or saved
         """
-        self._mark_if_from_db()
         self._original_state = self._as_dict_no_prep()
-
-    @property
-    def original_state(self):
-        self._mark_if_from_db()
-        return self._original_state_no_check_db
 
     @property
     def _original_state_no_check_db(self):
         """When called from the post_save signal we want the original state"""
-        if self._from_db:
-            return {f.attname: f.get_prep_value(self._original_state[f.attname]) for f in self._fields_minus_exclusions}
-        return self._empty_dict()
+        if not self._from_db:
+            return self._empty_dict()
+        return {f.attname: f.get_prep_value(self._original_state[f.attname]) for f in self._fields_minus_exclusions}
 
     @property
     def dirty_fields(self):
         """Which fields are dirty?"""
         new_state = self._as_dict()
-        return [key for key, value in self.original_state.iteritems() if value != new_state[key]]
+        return [key for key, value in self._original_state_no_check_db.items() if value != new_state[key]]
 
     @property
     def is_dirty(self):
@@ -209,14 +195,13 @@ class TrackableModel(models.Model):
     @property
     def changes_pending(self):
         """Which fields are dirty and what changes are being made to them?"""
-        new_state = self._as_dict()
-        return dict([(key, (value, new_state[key])) for key, value in self.original_state.iteritems() if value != new_state[key]])
+        return self._changes_pending_no_check_db
 
     @property
     def _changes_pending_no_check_db(self):
         """Which fields are dirty and what changes are being made to them?"""
         new_state = self._as_dict()
-        return dict([(key, (value, new_state[key])) for key, value in self._original_state_no_check_db.iteritems() if value != new_state[key]])
+        return dict([(key, (value, new_state[key])) for key, value in self._original_state_no_check_db.items() if value != new_state[key]])
 
     class Meta(object):
         """Object metaclass"""

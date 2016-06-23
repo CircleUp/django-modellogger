@@ -53,11 +53,11 @@ class TestModelLogger(TestCase):
     def test_track_changes_with_initial_id(self):
         p = Person(first_name='Bob', last_name='Smith', id=1)
         p.save()
-        self.assertEqual(ChangeLog.objects.count(), 3)
+        self.assertEqual(ChangeLog.objects.count(), 0)
 
         p.first_name = 'Sally'
         p.save()
-        self.assertEqual(ChangeLog.objects.count(), 4)
+        self.assertEqual(ChangeLog.objects.count(), 1)
 
     def test_track_changes_without_initial_id(self):
         p = Person(first_name='Bob', last_name='Smith')
@@ -98,11 +98,11 @@ class TestModelLogger(TestCase):
         self.assertEqual(logs[0].new_value_as_python, 1)
 
     def test_track_changes_after_db_pull(self):
-        p = Person(first_name='Bob', last_name='Smith', id=1)
+        p = Person(first_name='Bob', last_name='Smith')
         p.save()
         self.assertEqual(ChangeLog.objects.count(), 3)
 
-        p1 = Person.objects.get(pk=1)
+        p1 = Person.objects.get(pk=p.pk)
         p1.first_name = 'Sally'
         p1.save()
         self.assertEqual(ChangeLog.objects.count(), 4)
@@ -113,7 +113,7 @@ class TestModelLogger(TestCase):
                 model = Person
                 fields = ('id', 'first_name', 'last_name')
 
-        person = Person(first_name='John', last_name='Smith', id=2)
+        person = Person(first_name='John', last_name='Smith')
         person.save()
 
         self.assertEqual(ChangeLog.objects.count(), 3)
