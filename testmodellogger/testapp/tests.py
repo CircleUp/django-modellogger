@@ -1,9 +1,3 @@
-"""
-This file demonstrates writing tests using the unittest module. These will pass
-when you run "manage.py test".
-
-Replace this with more appropriate tests for your application.
-"""
 import pytest
 from django import forms
 from django.contrib.contenttypes.models import ContentType
@@ -31,11 +25,11 @@ def test_class_setup_with_subclasses():
         Car._trackable_model_initialized
 
     Vehicle()
-    assert 'Vehicle' == Car._trackable_model_initialized
+    assert Car._trackable_model_initialized == 'Vehicle'
 
     Car()
-    assert 'Car' == Car._trackable_model_initialized
-    assert 'Vehicle' == Vehicle._trackable_model_initialized
+    assert Car._trackable_model_initialized == 'Car'
+    assert Vehicle._trackable_model_initialized == 'Vehicle'
 
 
 def test_track_changes_simple():
@@ -73,7 +67,6 @@ def test_track_changes_without_initial_id():
     assert ChangeLog.objects.count() == 4
 
 
-@pytest.mark.django_db
 def test_change_log_returns_actual_python_objects():
     p = Person(donuts_consumed=5)
     p.save()
@@ -156,7 +149,7 @@ def test_changes_log():
     person = UserProfile(first_name="Bob", username='')
     person.save()
     logs = ChangeLog.objects.filter(column_name="first_name")
-    assert 1 == len(logs)
+    assert len(logs) == 1
     assert logs[0].user_id is None
     assert logs[0].column_name == 'first_name'
     assert logs[0].old_value is None
@@ -165,17 +158,11 @@ def test_changes_log():
     person.first_name = "Luke"
     person.save()
     logs = ChangeLog.objects.filter(column_name='first_name')
-    assert 2 == len(logs)
+    assert len(logs) == 2
     assert logs[1].user_id is None
     assert logs[1].column_name == 'first_name'
     assert logs[1].old_value == 'Bob'
     assert logs[1].new_value == 'Luke'
-
-    administrator = UserProfile(first_name='Anakin', username="anny")
-    administrator.save()
-    person.first_name = 'Leia'
-    person.identity_verification_user = administrator
-    person.save()
 
 
 def test_model_is_dirty_with_simple_field():
@@ -228,8 +215,8 @@ def test_is_dirty_with_relationships():
     person.investor_executive_id = 2
 
     assert person.is_dirty
-    assert ('investor_executive_id' in person.dirty_fields)
-    assert 2 == person.changes_pending['investor_executive_id'][1]
+    assert 'investor_executive_id' in person.dirty_fields
+    assert person.changes_pending['investor_executive_id'][1] == 2
     person.save()
 
     assert not person.is_dirty
@@ -237,10 +224,10 @@ def test_is_dirty_with_relationships():
 
 def test_records_default_values_as_changes():
     person = Person()
-    assert 3 == len(person.changes_pending)
+    assert len(person.changes_pending) == 3
 
     person = Person(preferred_ice_cream_flavor='Strawberry')
-    assert 3 == len(person.changes_pending)
+    assert len(person.changes_pending) == 3
 
 
 def test_is_dirty_from_db_get():
