@@ -4,9 +4,11 @@ from django.db import models
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import fields
+from django.db import connection
 from django.db.models.fields import FieldDoesNotExist
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import Signal
+from modellogger.utils import dict_diff
 
 from .middleware import get_request
 
@@ -21,7 +23,7 @@ def content_type_dict():
     global CONTENT_TYPES_DICT
     if not CONTENT_TYPES_DICT:
         content_types = ContentType.objects.all()
-        CONTENT_TYPES_DICT = dict([(ct.id, ct.model_class()) for ct in content_types])
+        CONTENT_TYPES_DICT = {ct.id: ct.model_class() for ct in content_types}
     return CONTENT_TYPES_DICT
 
 
@@ -184,8 +186,7 @@ class TrackableModel(models.Model):
     @property
     def dirty_fields(self):
         """Which fields are dirty?"""
-        new_state = self._as_dict()
-        return [key for key, value in self._original_state_no_check_db.items() if value != new_state[key]]
+        return self._changes_pending_no_check_db.keys()
 
     @property
     def is_dirty(self):
@@ -200,8 +201,26 @@ class TrackableModel(models.Model):
     @property
     def _changes_pending_no_check_db(self):
         """Which fields are dirty and what changes are being made to them?"""
-        new_state = self._as_dict()
-        return dict([(key, (value, new_state[key])) for key, value in self._original_state_no_check_db.items() if value != new_state[key]])
+        return dict_diff(self._original_state_no_check_db, self._as_dict())
+
+    def find_unlogged_changes(self):
+        content_type = ContentType.objects.get_for_model(self)
+        sql = """
+        SELECT lmc.column_name, lmc.`new_value`
+        FROM (
+            SELECT lmc.`column_name`, MAX(id) AS most_recent_id
+            FROM log_model_change lmc
+            WHERE lmc.`object_id` = {object_id} AND lmc.`content_type_id`={content_type_id}
+            GROUP BY lmc.`column_name`
+            ) a
+        INNER JOIN log_model_change lmc ON lmc.id = a.most_recent_id
+        """
+        sql = sql.format(object_id=self.pk, content_type_id=content_type.pk)
+        with connection.cursor() as cursor:
+            cursor.execute(sql)
+            rows = cursor.fetchall()
+        logged_data = {n: v for n, v in rows}
+        return dict_diff(logged_data, self._as_dict())
 
     class Meta(object):
         """Object metaclass"""
