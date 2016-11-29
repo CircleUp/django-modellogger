@@ -24,4 +24,3 @@ class UserProfile(Person):
     identity_verification_user = models.ForeignKey('UserProfile', null=True, related_name="+")
     account_balance = models.FloatField(null=True, default=None)
     date_joined = models.DateTimeField(null=True, default=None)
-
