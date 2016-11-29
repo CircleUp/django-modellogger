@@ -4,7 +4,7 @@ from django.db import models
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import fields
-from django.db import connection
+from django.db import router, connections
 from django.db.models.fields import FieldDoesNotExist
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import Signal
@@ -204,6 +204,10 @@ class TrackableModel(models.Model):
         return dict_diff(self._original_state_no_check_db, self._as_dict())
 
     def find_unlogged_changes(self):
+        """Compares the current object to the most recent values stored in the ChangeLog"""
+        if self.pk is None:
+            return {}
+
         content_type = ContentType.objects.get_for_model(self)
         sql = """
         SELECT lmc.column_name, lmc.`new_value`
@@ -216,7 +220,8 @@ class TrackableModel(models.Model):
         INNER JOIN log_model_change lmc ON lmc.id = a.most_recent_id
         """
         sql = sql.format(object_id=self.pk, content_type_id=content_type.pk)
-        with connection.cursor() as cursor:
+        db_name = router.db_for_read(ChangeLog)
+        with connections[db_name].cursor() as cursor:
             cursor.execute(sql)
             rows = cursor.fetchall()
         logged_data = {n: v for n, v in rows}
