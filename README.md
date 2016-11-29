@@ -1,5 +1,5 @@
-Installation
-============
+# Installation
+
 
 $ pip install django-modellogger
 
@@ -16,7 +16,7 @@ Add to in settings.py
 
 $ python manage.py syncdb
 
-Usage
-====
-class Customer(TrackableModel):
-    TRACK_CHANGES = True
+# Usage
+
+    class Customer(TrackableModel):
+        TRACK_CHANGES = True

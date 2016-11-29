@@ -1,0 +1,7 @@
+Django==1.9.5
+mysqlclient
+pytest
+pytest-django
+pytest-pep8
+pytest-pythonpath
+tox

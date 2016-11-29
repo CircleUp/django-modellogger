@@ -14,7 +14,7 @@ setup(
     name="django-modellogger",
     version=__version__,
     author="CircleUp",
-    author_email="webaccounts@circleup.com",
+    author_email="modellogger@accounts.brycedrennan.com",
     description=("Change tracking for Django models."),
     keywords="django",
     url="http://packages.python.org/django-modellogger",
