@@ -4,9 +4,12 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 
 from modellogger.models import ChangeLog, TrackableModel
+from modellogger.utils import UNSET
 from testapp.models import UserProfile, TrackedModel, Person
 
 pytestmark = pytest.mark.django_db
+
+NUMBER_OF_TRACKED_PERSON_FIELDS = 5
 
 
 def test_class_setup_with_subclasses():
@@ -34,17 +37,16 @@ def test_class_setup_with_subclasses():
 
 def test_track_changes_simple():
     p = Person()
-    p.first_name = 'Bob'
     p.save()
-    assert ChangeLog.objects.count() == 3
+    assert ChangeLog.objects.count() == NUMBER_OF_TRACKED_PERSON_FIELDS
 
     p.first_name = 'Sally'
     p.save()
-    assert ChangeLog.objects.count() == 4
+    assert ChangeLog.objects.count() == NUMBER_OF_TRACKED_PERSON_FIELDS + 1
 
     p.first_name = 'Bob'
     p.save()
-    assert ChangeLog.objects.count() == 5
+    assert ChangeLog.objects.count() == NUMBER_OF_TRACKED_PERSON_FIELDS + 2
 
 
 def test_track_changes_with_initial_id():
@@ -55,16 +57,6 @@ def test_track_changes_with_initial_id():
     p.first_name = 'Sally'
     p.save()
     assert ChangeLog.objects.count() == 1
-
-
-def test_track_changes_without_initial_id():
-    p = Person(first_name='Bob', last_name='Smith')
-    p.save()
-    assert ChangeLog.objects.count() == 3
-
-    p.first_name = 'Sally'
-    p.save()
-    assert ChangeLog.objects.count() == 4
 
 
 def test_change_log_returns_actual_python_objects():
@@ -103,12 +95,12 @@ def test_track_changes_for_floats_saved_to_integer_fields():
 def test_track_changes_after_db_pull():
     p = Person(first_name='Bob', last_name='Smith')
     p.save()
-    assert ChangeLog.objects.count() == 3
+    assert ChangeLog.objects.count() == NUMBER_OF_TRACKED_PERSON_FIELDS
 
     p1 = Person.objects.get(pk=p.pk)
     p1.first_name = 'Sally'
     p1.save()
-    assert ChangeLog.objects.count() == 4
+    assert ChangeLog.objects.count() == NUMBER_OF_TRACKED_PERSON_FIELDS + 1
 
 
 def test_form_save():
@@ -120,7 +112,7 @@ def test_form_save():
     person = Person(first_name='John', last_name='Smith')
     person.save()
 
-    assert ChangeLog.objects.count() == 3
+    assert ChangeLog.objects.count() == NUMBER_OF_TRACKED_PERSON_FIELDS
 
     post_data = {
         'first_name': 'Sally',
@@ -130,7 +122,7 @@ def test_form_save():
     form = PersonForm(post_data, instance=person)
     form.save()
 
-    assert ChangeLog.objects.count() == 5
+    assert ChangeLog.objects.count() == NUMBER_OF_TRACKED_PERSON_FIELDS + 2
 
 
 def test_nominal():
@@ -152,7 +144,7 @@ def test_changes_log():
     assert len(logs) == 1
     assert logs[0].user_id is None
     assert logs[0].column_name == 'first_name'
-    assert logs[0].old_value is None
+    assert logs[0].old_value == repr(UNSET)
     assert logs[0].new_value == 'Bob'
 
     person.first_name = "Luke"
@@ -222,12 +214,15 @@ def test_is_dirty_with_relationships():
     assert not person.is_dirty
 
 
-def test_records_default_values_as_changes():
+def test_records_initial_values_as_changes():
     person = Person()
-    assert len(person.changes_pending) == 3
+    assert len(person.changes_pending) == 5
+
+    person = Person(preferred_ice_cream_flavor=None)
+    assert len(person.changes_pending) == 5
 
     person = Person(preferred_ice_cream_flavor='Strawberry')
-    assert len(person.changes_pending) == 3
+    assert len(person.changes_pending) == 5
 
 
 def test_is_dirty_from_db_get():

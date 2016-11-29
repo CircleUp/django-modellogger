@@ -13,7 +13,7 @@ class Person(TrackableModel):
     last_name = models.CharField(max_length=100, blank=True, default='')
     investor_executive = models.ForeignKey('self', null=True)
     donuts_consumed = models.PositiveIntegerField(null=True, default=None)
-    preferred_ice_cream_flavor = models.CharField(max_length=100, default='Vanilla')
+    preferred_ice_cream_flavor = models.CharField(max_length=100, default='Vanilla', null=True)
 
 
 class UserProfile(Person):
