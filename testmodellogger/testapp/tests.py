@@ -242,3 +242,26 @@ def test_is_dirty_from_db_filter():
 
     p = Person.objects.filter(first_name="Bob")[0]
     assert not p.is_dirty
+
+
+def test_find_unlogged_changes():
+    p = Person(first_name="Bob")
+    p.save()
+
+    assert len(p.find_unlogged_changes()) == 0
+
+    p.first_name = 'Samantha'
+    p.save()
+
+    assert len(p.find_unlogged_changes()) == 0
+
+    # make untracked change
+    Person.objects.all().update(first_name="Sam")
+
+    # get instance from db
+    p = Person.objects.get(first_name="Sam")
+    unlogged_data = p.find_unlogged_changes()
+
+    assert len(unlogged_data) == 1
+
+    assert unlogged_data['first_name'] == ('Samantha', 'Sam')
