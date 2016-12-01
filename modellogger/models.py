@@ -6,25 +6,11 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import fields
 from django.db import router, connections
 from django.db.models.fields import FieldDoesNotExist
-from django.db.models.signals import post_save, pre_save
+from django.db.models.signals import post_save
 from django.dispatch import Signal
-from modellogger.utils import dict_diff
+from modellogger.utils import dict_diff, UNSET, xstr, content_type_dict
 
 from .middleware import get_request
-
-CONTENT_TYPES_DICT = None
-
-
-def xstr(s):
-    return '' if s is None else str(s)
-
-
-def content_type_dict():
-    global CONTENT_TYPES_DICT
-    if not CONTENT_TYPES_DICT:
-        content_types = ContentType.objects.all()
-        CONTENT_TYPES_DICT = {ct.id: ct.model_class() for ct in content_types}
-    return CONTENT_TYPES_DICT
 
 
 def mark_from_db(sender, instance, **kwargs):
@@ -145,14 +131,9 @@ class TrackableModel(models.Model):
             post_save.connect(post_save_method, sender=cls, dispatch_uid='DirtyRecord-%s' % cls.__name__)
             post_save.connect(mark_from_db, sender=cls, dispatch_uid='MarkFromDb-%s' % cls.__name__)
 
-    # we need these methods from Record
     def _empty_dict(self):
         """An empty dict version of the model"""
-        return dict([(f.attname, None) for f in self._fields_minus_exclusions])
-
-    def _default_dict(self):
-        """An empty dict version of the model - populated with defaults"""
-        return dict([(f.attname, f.get_default()) for f in self._fields_minus_exclusions])
+        return {f.attname: UNSET for f in self._fields_minus_exclusions}
 
     def _as_dict_no_prep(self):
         """The model's state as a dictionary (without passing through prep value)
