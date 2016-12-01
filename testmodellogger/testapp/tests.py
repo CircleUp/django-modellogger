@@ -9,7 +9,7 @@ from testapp.models import UserProfile, TrackedModel, Person
 
 pytestmark = pytest.mark.django_db
 
-NUMBER_OF_TRACKED_PERSON_FIELDS = 5
+NUMBER_OF_TRACKED_PERSON_FIELDS = len(Person._meta.fields) - 3  # exclude id, created_on, updated_on
 
 
 def test_class_setup_with_subclasses():
@@ -216,13 +216,13 @@ def test_is_dirty_with_relationships():
 
 def test_records_initial_values_as_changes():
     person = Person()
-    assert len(person.changes_pending) == 5
+    assert len(person.changes_pending) == NUMBER_OF_TRACKED_PERSON_FIELDS
 
     person = Person(preferred_ice_cream_flavor=None)
-    assert len(person.changes_pending) == 5
+    assert len(person.changes_pending) == NUMBER_OF_TRACKED_PERSON_FIELDS
 
     person = Person(preferred_ice_cream_flavor='Strawberry')
-    assert len(person.changes_pending) == 5
+    assert len(person.changes_pending) == NUMBER_OF_TRACKED_PERSON_FIELDS
 
 
 def test_is_dirty_from_db_get():
