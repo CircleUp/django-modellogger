@@ -3,7 +3,7 @@ from django.contrib.contenttypes.models import ContentType
 
 class UnsetValue(object):
     def __repr__(self):
-        return '<- UNSET ->'
+        return '<--UNSET-->'
 
 
 UNSET = UnsetValue()
@@ -25,4 +25,4 @@ def content_type_dict():
 
 def dict_diff(old, new):
     """Return the difference between the two dicts"""
-    return {key: (value, new[key]) for key, value in old.items() if value != new[key]}
+    return {key: (value, new.get(key, UNSET)) for key, value in old.items() if value != new.get(key, UNSET)}

@@ -260,3 +260,14 @@ def test_find_unlogged_changes():
     assert len(unlogged_data) == 1
 
     assert unlogged_data['first_name'] == ('Samantha', 'Sam')
+
+
+def test_find_unlogged_changes_with_column_change():
+    p = Person(first_name="Bob")
+    p.save()
+    cl = ChangeLog(content_object=p, column_name='no_longer_existing_column', old_value='vanilla', new_value='chocolate')
+    cl.save()
+    unlogged_data = p.find_unlogged_changes()
+
+    assert len(unlogged_data) == 1
+    assert unlogged_data['no_longer_existing_column'] == ('chocolate', UNSET)
