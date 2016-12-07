@@ -269,5 +269,4 @@ def test_find_unlogged_changes_with_column_change():
     cl.save()
     unlogged_data = p.find_unlogged_changes()
 
-    assert len(unlogged_data) == 1
-    assert unlogged_data['no_longer_existing_column'] == ('chocolate', UNSET)
+    assert len(unlogged_data) == 0

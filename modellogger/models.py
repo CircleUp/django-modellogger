@@ -206,7 +206,13 @@ class TrackableModel(models.Model):
             cursor.execute(sql)
             rows = cursor.fetchall()
         logged_data = {n: v for n, v in rows}
-        return dict_diff(logged_data, self._as_dict())
+        changes = dict_diff(logged_data, self._as_dict())
+        unlogged_changes = {}
+        for col_name, (log_version, obj_version) in changes.items():
+            if obj_version != UNSET:
+                unlogged_changes[col_name] = (log_version, obj_version)
+
+        return unlogged_changes
 
     class Meta(object):
         """Object metaclass"""
